@@ -61,7 +61,7 @@
   <div class="loading" id="loading">
     <div class="loading-content">
       <div class="loading-title">Flight Sim</div>
-      <div class="loading-subtitle">Initializing systems...</div>
+      <div class="loading-subtitle" id="loading-text">Loading Cesium engine...</div>
       <div class="loading-spinner"></div>
     </div>
   </div>
@@ -198,9 +198,28 @@
       }
     }
     
+    function log(msg) {
+      console.log(msg);
+      const el = document.getElementById('loading-text');
+      if (el) el.textContent = msg;
+    }
+    
     async function init() {
+      log('Starting...');
+      
+      // Check Cesium
+      if (typeof Cesium === 'undefined') {
+        log('ERROR: Cesium not loaded. Check internet connection.');
+        return;
+      }
+      log('Cesium loaded, initializing...');
+      
       Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
+      log('Token set, creating terrain...');
+      
+      // Reset body
       document.body.style.margin = '0';
+      document.body.style.padding = '0';
       
       const viewer = new Cesium.Viewer('cesium-container', {
         terrainProvider: await Cesium.createWorldTerrainAsync(),
@@ -213,6 +232,8 @@
       viewer.resize();
       document.getElementById('cesium-container').style.width = '100vw';
       document.getElementById('cesium-container').style.height = '100vh';
+      
+      log('Viewer created, adding aircraft...');
       
       // Aircraft - smaller model for faster loading
       const aircraft = viewer.entities.add({
@@ -258,6 +279,7 @@
         duration: 0
       });
       
+      log('Ready to fly!');
       document.getElementById('loading').classList.add('hidden');
       
       function loop() {
@@ -284,7 +306,10 @@
       loop();
     }
     
-    init();
+    init().catch(e => {
+      console.error(e);
+      log('ERROR: ' + e.message);
+    });
   </script>
 </body>
 </html>
