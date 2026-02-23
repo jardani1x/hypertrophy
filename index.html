@@ -4,7 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Flight Simulator - M0</title>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.114/Build/Cesium/Cesium.js"></script>
+  <!-- Try multiple Cesium CDNs -->
+  <script>
+    window.CESIUM_CDNS = [
+      'https://cesium.com/downloads/cesiumjs/releases/1.114/Build/Cesium/Cesium.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/cesium/1.114.0/Cesium.js',
+      'https://cesiumjs.org/releases/1.114/Build/Cesium/Cesium.js'
+    ];
+    window.CESIUM_CSS = [
+      'https://cesium.com/downloads/cesiumjs/releases/1.114/Build/Cesium/Widgets/widgets.css',
+      'https://cdnjs.cloudflare.com/ajax/libs/cesium/1.114.0/Widgets/widgets.css'
+    ];
+    
+    async function loadCesium() {
+      for (let i = 0; i < window.CESIUM_CDNS.length; i++) {
+        try {
+          document.getElementById('loading-text').textContent = 'Loading Cesium CDN ' + (i+1) + '...';
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = window.CESIUM_CDNS[i];
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+          });
+          
+          // Load CSS
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = window.CESIUM_CSS[i];
+          document.head.appendChild(link);
+          
+          console.log('Cesium loaded from CDN ' + (i+1));
+          return true;
+        } catch(e) {
+          console.warn('CDN ' + (i+1) + ' failed:', e);
+        }
+      }
+      throw new Error('All Cesium CDNs failed');
+    }
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { 
@@ -205,14 +243,10 @@
     }
     
     async function init() {
-      log('Starting...');
-      
-      // Check Cesium
-      if (typeof Cesium === 'undefined') {
-        log('ERROR: Cesium not loaded. Check internet connection.');
-        return;
-      }
-      log('Cesium loaded, initializing...');
+      try {
+        log('Loading Cesium engine...');
+        await loadCesium();
+        log('Initializing...');
       
       Cesium.Ion.defaultAccessToken = CESIUM_TOKEN;
       log('Token set, creating terrain...');
